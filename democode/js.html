@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS Dot Product</title>
+
+  <script type="module">
+    import { perf } from 'https://cdn.jsdelivr.net/npm/@jsheaven/perf@1.0.4/+esm'
+    import { generateSampleData } from "./lib/samples.mjs"
+
+    // 2 x 1024 float32 vectors with 1024 dimensions, seeded random
+    const sampleData = generateSampleData(31337 /* seed */)
+
+    async function runBenchmark() {
+
+      document.getElementById('results').innerHTML = `<br /><b>Benchmarking... (might take a few secs.)</b>`
+
+        const dimensions = JSON.parse(document.querySelector('[name=dimensions]').value);
+        const iterations = JSON.parse(document.querySelector('[name=iterations]').value);
+
+        const times = {}
+        const results = []
+        const measurement = await perf([{
+            name: 'JS',
+            fn: async (dims, i) => {
+              
+              if (!times[dims]) {
+                times[dims] = performance.now()
+              }
+              const vectorA = sampleData.vectorsA[i].slice(0, dims);
+              const vectorB = sampleData.vectorsB[i].slice(0, dims);
+              
+              const time = performance.now()
+
+              // dot product
+
+              // variant a: slowest
+              //const result = vectorA.reduce((sum, ai, i) => sum + ai * vectorB[i], 0)
+              
+              // variant b: unrolled loop => slower
+              let result = 0.0;
+
+              // Unrolling the loop to improve performance
+              let j = 0;
+              const unrollFactor = 4;
+              const length = Math.floor(dims / unrollFactor) * unrollFactor;
+
+              for (; j < length; j += unrollFactor) {
+                result += vectorA[j] * vectorB[j] +
+                        vectorA[j + 1] * vectorB[j + 1] +
+                        vectorA[j + 2] * vectorB[j + 2] +
+                        vectorA[j + 3] * vectorB[j + 3];
+              }
+
+              // Handle the remaining elements
+              for (; j < dims; j++) {
+                result += vectorA[j] * vectorB[j];
+              }
+
+              /* variant c: non-unrolled loop => slowest
+              let result = 0;
+              for (let i=0; i<vectorA.length; i++) {
+                  result += vectorA[i] * vectorB[i]
+              }
+              */
+
+              // Call the dotProduct function
+              results.push(result);
+
+              if (i === iterations - 1 && times[dims]) {
+                times[dims] = performance.now() - times[dims];
+              }
+            },
+          }], 
+          dimensions /* sizes (dimensionality) */, 
+          true /* warmup*/, 
+          iterations /* iterations */,  
+          30000 /* maxExecutionTime */, 
+          1 /* chunk size, one call at a time */
+        )
+
+        let testFailed = true;
+                           // WASM value: -0.018422827124595642
+        if (results[0] === -0.01842280854650391) {
+          testFailed = false;
+        }
+
+        console.log('testFailed', testFailed, 'result', results[0])
+        
+        document.getElementById('results').innerHTML = `
+          <h2>Results:</h2>
+          <h3>Optimized JS:</h3>
+          <b>Runs:</b> <b>${iterations}</b> single dot product calculations / pairs of n-dimensional vectors<br />
+          <b>Took:</b> <br />${dimensions.map((d, i) => `<b>${times[d].toFixed()} ms</b> for <b>${d} dimensions</b>`).join(", <br />")}<br />`
+      }
+      window.runBenchmark = runBenchmark;
+      
+    </script>
+</head>
+<body>
+
+  <h1>Fast Dot Product - Optimized JS</h1>
+
+  Iterations: <input name="iterations" value="20000" type="number" />
+  Dimensions (JSON): <input name="dimensions" value="[4, 384, 1024]" type="text" />
+
+  <button onclick="javascript:runBenchmark();">Run Benchmark</button>
+
+  <div id="results"></div>
+
+  <h2>Implementation</h2>
+
+  <h3>JS:</h3>
+  <pre>
+    let result = 0.0;
+
+    // Unrolling the loop to improve performance
+    let j = 0;
+    const unrollFactor = 4;
+    const length = Math.floor(dims / unrollFactor) * unrollFactor;
+
+    for (; j &lt; length; j += unrollFactor) {
+      result += vectorA[j] * vectorB[j] +
+              vectorA[j + 1] * vectorB[j + 1] +
+              vectorA[j + 2] * vectorB[j + 2] +
+              vectorA[j + 3] * vectorB[j + 3];
+    }
+
+    // Handle the remaining elements
+    for (; j &lt; dims; j++) {
+      result += vectorA[j] * vectorB[j];
+    }
+  </pre>
+
+</body>
+</html>

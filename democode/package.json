@@ -1,0 +1,28 @@
+{
+  "name": "democode",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "build:wasm": "emcc wasm.c -s EXPORTED_FUNCTIONS='[\"_dotProduct\", \"_malloc\", \"_free\"]' -msimd128 -O2 -o .gen/dot_product.mjs",
+    "postbuild:wasm": "wasm2wat .gen/dot_product.wasm -o .gen/dot_product.wat",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "wabt": "^1.0.35"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@picocss/pico": "^2.0.6",
+    "vite": "^5.3.4"
+  }
+}

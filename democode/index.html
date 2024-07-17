@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fast Dotproduct Demo Page</title>
+  </head>
+  <body>
+    <h1>Fast Dot Product &ndash; Benchmark Demo Page</h1>
+
+    <p>Simple example code on how to run dot product calculations on the web platform, but fast. Accelerated by GPU, CPU vector instructions (WebAssembly, close to native), and JIT optimizer instruction/memory alignment.</p>
+
+    <h3>Implementations, ordered by performance:</h3>
+    <ol>
+      <li><a href="wasm.html">WebAssembly, using SIMD instruction set</a> <i>(~380% faster)</i></li>
+      <li><a href="js.html">JIT-optimized JavaScript</a> <i>(~300% faster)</i></li>
+      <li>Baseline: <a href="std_js.html">Standard JavaScript</a></li>
+    </ol>
+
+
+  </body>
+</html>
