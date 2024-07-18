@@ -8,10 +8,8 @@
   <script type="module">
     import { perf } from 'https://cdn.jsdelivr.net/npm/@jsheaven/perf@1.0.4/+esm'
     import { generateSampleData } from "./lib/samples.mjs"
-    import getWasmModule from "./.gen/dot_product.mjs";
+    import getWasmModule from "./.gen/dot_product_chunks.mjs";
 
-    // 2 x 1024 float32 vectors with 1024 dimensions, seeded random
-    const sampleData = generateSampleData(31337 /* seed */)
 
     let Module;
 
@@ -22,6 +20,9 @@
         Module = await getWasmModule()
       }
 
+        // 2 x 1024 float32 vectors with 1024 dimensions, seeded random
+        const sampleData = generateSampleData(31337 /* seed */)
+        
         // using SIMD and threads as both have > 90% coverage, even in browsers (browsers should use WebGL)
         // usually, this implementation should be chosen for when running in a JS server-side environment,
         // such as V8 in Node.js https://v8.dev/features/simd
@@ -37,28 +38,30 @@
         const measurement = await perf([{
             name: 'WASM',
             fn: async (dims, i) => {
-              
-              if (!times[dims]) {
-                times[dims] = performance.now()
-              }
+
+              // Assuming vectorA and vectorB are available and dims is defined
               const vectorA = sampleData.vectorsA[i].slice(0, dims);
               const vectorB = sampleData.vectorsB[i].slice(0, dims);
-              
-              const time = performance.now()
 
-              // Allocate memory in the WASM heap and copy the input vectors
-              const ptrA = Module._malloc(vectorA.length * vectorA.BYTES_PER_ELEMENT);
-              const ptrB = Module._malloc(vectorB.length * vectorB.BYTES_PER_ELEMENT);
+              // Calculate the total bytes needed for both vectors
+              const totalBytes = (vectorA.length + vectorB.length) * Float32Array.BYTES_PER_ELEMENT;
 
-              Module.HEAPF32.set(vectorA, ptrA / vectorA.BYTES_PER_ELEMENT);
-              Module.HEAPF32.set(vectorB, ptrB / vectorB.BYTES_PER_ELEMENT);
+              // Allocate memory once for both vectors
+              const ptr = Module._malloc(totalBytes);
+
+              // Calculate offset for vectorB
+              const offsetB = ptr + vectorA.length * Float32Array.BYTES_PER_ELEMENT;
+
+              // Copy the input vectors into the WASM heap
+              Module.HEAPF32.set(vectorA, ptr / Float32Array.BYTES_PER_ELEMENT);
+              Module.HEAPF32.set(vectorB, offsetB / Float32Array.BYTES_PER_ELEMENT);
 
               // Call the dotProduct function
-              results.push(dotProduct(ptrA, ptrB, dims));
+              const result = dotProduct(ptr, offsetB, dims);
+              results.push(result);
 
               // Free the allocated memory
-              Module._free(ptrA);
-              Module._free(ptrB);
+              Module._free(ptr);
 
               if (i === iterations - 1 && times[dims]) {
                 times[dims] = performance.now() - times[dims];
@@ -93,7 +96,7 @@
   <h1>Fast Dot Product - WebAssembly using SIMD</h1>
 
 
-  Iterations: <input name="iterations" value="20000" type="number" />
+  Iterations: <input name="iterations" value="625" type="number" />
   Dimensions (JSON): <input name="dimensions" value="[4, 384, 1024]" type="text" />
 
   <button onclick="javascript:runBenchmark();">Run Benchmark</button>
