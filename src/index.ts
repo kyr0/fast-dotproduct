@@ -67,6 +67,21 @@ export const dotProductJS = (
   return results;
 };
 
+export const dotProductNaiveBaselineJS = (
+  vectorsA: Vectors,
+  vectorsB: Vectors,
+): Float32Array => {
+  const size = vectorsA.length;
+  const results = new Float32Array(size);
+  for (let i = 0; i < size; i++) {
+    results[i] = vectorsA[i].reduce(
+      (sum, ai, j) => sum + ai * vectorsB[i][j],
+      0,
+    );
+  }
+  return results;
+};
+
 // 380% to 300% faster than baseline JS
 export const dotProduct = (
   vectorsA: Vectors,

@@ -2,7 +2,7 @@
 
   # fast-dotproduct
 
-  ### Fast dot product calculations for the web platform.
+  ### Fast dot product calculations for the web platform. Speeds up your 🐌 dot product calculations by up to 103457% ⚡.
 
 </span>
 
@@ -11,19 +11,26 @@
 
 ## ⚡ It's fast!
 
-### WebAssembly, SIMD-optimized:
-- Runs: `20000` single dot product calculations / pairs of n-dimensional vectors
+### 🐌 Slow: baseline/naive JS:
+- Runs: `100k` single dot product calculations on 2 n-dimensional vectors, loop-inlined
 - Took:
-  - *1 ms* for `4` dimensions _(suffering from invocation overhead)_, 
-  - *5 ms* for `384` dimensions, 
-  - *7 ms* for `1024` dimensions
+  - *35756 ms* for 4 dimensions, 
+  - *36012 ms* ms for 384 dimensions, 
+  - *36525 ms* ms for 1024 dimensions
 
-### JavaScript, JIT-optimized:
-- Runs: `20000` single dot product calculations / pairs of n-dimensional vectors
+### 🦆 Faster: pure JavaScript, but JIT-optimized: (468,27x faster, or 46827% faster)
+- Runs: `100k` single dot product calculations on 2 n-dimensional vectors, loop-inlined
 - Took:
-  - *0 ms* for `4` dimensions, 
-  - *6 ms* for `384` dimensions, 
-  - *16 ms* for `1024` dimensions
+  - *1 ms* for `4` dimensions, 
+  - *30 ms* for `384` dimensions, 
+  - *78 ms* for `1024` dimensions
+
+### 🐇 Fastest: WebAssembly, SIMD-optimized (1034,57x faster, or 103457%):
+- Runs: `100k` single dot product calculations on 2 n-dimensional vectors, loop-inlined
+- Took:
+  - *3 ms* for `4` dimensions _(suffering from inital invocation overhead)_, 
+  - *13 ms* for `384` dimensions, 
+  - *35 ms* for `1024` dimensions
 
 _Do you think, that you can improve these algos? Please help improving this project!_
 
@@ -65,7 +72,26 @@ const result = dotProduct([vectorA], [vectorB])
 
 Examples on how to use the WASM or JS-implementation specifically, please refer to [the tests](./src/index.spec.ts).
 
-### 4. But wouldn't it be faster when we use the GPU?? 
+### Why shouldn't I use a simple, naive dot product implementation in JS?
+
+> "Wouldn't a simple implementation not do it? I read that the V8 and JavaScriptCore optimizers can do a great job, optimizing!"
+
+```ts
+vectorA.reduce((sum, ai, j) => sum + ai * vectorB[j], 0)
+```
+
+Well.. unfortunately, sometimes they do, sometimes they don't. If we narrow the scope of what the optimizer need to speculate about,
+we get a performance boost. This is, what happens in this repo's JIT optimized implementation. But it's still a JS/JIT based implementation.
+Using a WebAssembly runtime, and explicitly using the `v128` instruction set, as well as explicitly choosing the instructions to use, 
+and on top of that, calculating 4 float32 dot product calculations per instruction, we get the greatest boost.
+
+You can run the performance tests on your machine. Checkout the repo and run: `npm run test`.
+
+### Err, cool, but for what do I need this anyway?
+
+Vector search, for example. [Dot products](https://en.wikipedia.org/wiki/Dot_product) are an essential part of the math behind [cosine similarity](https://en.wikipedia.org/wiki/Cosine_similarity).
+
+### But wouldn't it be faster when we use the GPU?? 
 
 Unfortunately, not necessarily. The time it takes to finish a program execution not only depends on the computation speed.
 There are factors like `memory allocation` and `memory alignment` overhead. And when you're done with memory management,
@@ -73,13 +99,13 @@ there is still `shader compilation`. After you're done with the computation, you
 Using the GPU can be a great boost for heavy workloads, but isn't always benefitial for small ticket size workloads.
 
 
-### 5. Can't we use `pthread` in WebAssembly and many Workers for parallel execution?
+### Can't we use `pthread` in WebAssembly and many Workers for parallel execution?
 
 Well, you can, but it isn't necessarily faster either. Raming up a Worker can be pre-computed, but you still have to use the 
 message loop to pass data from A to B and back, map memory and organize workloads. I couldn't find a scenario under the given
 workfload ticket sizes, where `pthread` and Worker-based calculation wouldn't show a drastically bad impact on performance, unfortunately.
 
-### 6. Help improve this project!
+### Help improve this project!
 
 #### Setup
 
