@@ -11,6 +11,8 @@
 
 ## ⚡ It's fast!
 
+_For reference: The following results were produced on typical a consumer machine: Macbook Air, 13", M3, 2024, 8 core, 16 GiB RAM, model: [MXCV3D](https://support.apple.com/en-us/118551)_
+
 ### 🐌 Slow: baseline/naive JS:
 - Runs: `100k` single dot product calculations on 2 n-dimensional vectors, loop-inlined
 - Took:
