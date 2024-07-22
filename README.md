@@ -21,7 +21,7 @@
 ### 🦆 Faster: pure JavaScript, but JIT-optimized: (468,27x faster, or 46827% faster)
 - Runs: `100k` single dot product calculations on 2 n-dimensional vectors, loop-inlined
 - Took:
-  - *1 ms* for `4` dimensions, 
+  - *1 ms* for `4` dimensions,
   - *30 ms* for `384` dimensions, 
   - *78 ms* for `1024` dimensions
 
@@ -32,7 +32,7 @@
   - *13 ms* for `384` dimensions, 
   - *35 ms* for `1024` dimensions
 
-_Do you think, that you can improve these algos? Please help improving this project!_
+_Do you see any potential for further improvements? Please contribute to this project! Let's build the fastest dotproduct library for the web!_
 
 ## 📚 Usage
 
@@ -60,7 +60,7 @@ const vectorB = new Float32Array([
 ])
 
 // -0.01842280849814415
-const result = dotProduct([vectorA], [vectorB])
+const result = await dotProduct([vectorA], [vectorB])
 
 // if you have many vectors, pass them as a tensor for improved performance:
 // const vectorsA = [Float32Array(1024), Float32Array(1024), ...]

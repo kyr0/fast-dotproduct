@@ -62,10 +62,19 @@ test("Calculates the dot product of two vectors using JIT optimized JS", async (
 });
 
 test("Calculates the dot product of two vectors using SIMD optimized WebAssembly module", async () => {
-  const Module = await getWasmModule();
   const vectorA = sampleData20kx4dims.vectorsA[0];
   const vectorB = sampleData20kx4dims.vectorsB[0];
-  const results = dotProductWasm([vectorA], [vectorB], Module);
+  const results = await dotProductWasm([vectorA], [vectorB]);
+  expect(results[0]).toBeCloseTo(-0.01842280849814415);
+});
+
+test("Auto-switches between JIT-optimized JS and SIMD-optimized WASM based on WebAssembly availability", async () => {
+  const vectorA = sampleData20kx4dims.vectorsA[0];
+  const vectorB = sampleData20kx4dims.vectorsB[0];
+  const results = await dotProduct(
+    [vectorA, vectorA, vectorA, vectorA],
+    [vectorB, vectorB, vectorB, vectorB],
+  );
   expect(results[0]).toBeCloseTo(-0.01842280849814415);
 });
 
@@ -142,7 +151,6 @@ ${dimensions.map((d) => `  - ${times[d].toFixed()} ms for ${d} dimensions`).join
 });
 
 test("perf: Measure and report the performance of 100000 single, SIMD-optimized WASM-based dot product calculations", async () => {
-  const Module = await getWasmModule();
   const times: { [index: number]: number } = {};
   const iterations = 100000;
   const dimensions = [4, 384, 1024];
@@ -156,7 +164,7 @@ test("perf: Measure and report the performance of 100000 single, SIMD-optimized 
           if (!times[dims]) {
             times[dims] = performance.now();
           }
-          dotProductWasm([vectorA], [vectorB], Module);
+          await dotProductWasm([vectorA], [vectorB]);
 
           if (i === iterations - 1 && times[dims]) {
             times[dims] = performance.now() - times[dims];
@@ -253,7 +261,7 @@ test("perf: Measure and report the performance of 100000 single, SIMD-optimized 
           const vectorsA = samplesPerDimension[dims as 4 | 384 | 1024].vectorsA;
           const vectorsB = samplesPerDimension[dims as 4 | 384 | 1024].vectorsB;
           times[dims] = performance.now();
-          dotProductWasm(vectorsA, vectorsB, Module);
+          await dotProductWasm(vectorsA, vectorsB, Module);
           times[dims] = performance.now() - times[dims];
         },
       },

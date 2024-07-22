@@ -30,19 +30,19 @@
     }
   },
   "scripts": {
+    "e2e": "tsx scripts/e2e.ts",
     "test": "vitest",
-    "prebuild": "mkdir -p src/.gen",
-    "build": "pkgroll",
-    "postbuild": "emcc src/dot_product_simd.c -s EXPORTED_FUNCTIONS='[\"_dotProduct\", \"_malloc\", \"_free\"]' -msimd128 -O2 -o src/.gen/dot_product.mjs"
+    "build": "tsx scripts/build.ts"
   },
   "author": "Aron Homberg <info@aron-homberg.de>",
   "license": "MIT",
   "files": ["dist", "README.md", "LICENSE", "package.json"],
   "devDependencies": {
     "@biomejs/biome": "^1.6.4",
+    "@jsheaven/perf": "^1.1.1",
     "pkgroll": "^2.1.1",
+    "tsx": "^4.16.2",
     "typescript": "^5.0.0",
-    "vitest": "^1.6.0",
-    "@jsheaven/perf": "^1.1.1"
+    "vitest": "^1.6.0"
   }
 }

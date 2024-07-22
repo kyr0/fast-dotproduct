@@ -1,3 +1,5 @@
+import getWasmModule from "./.gen/dot_product";
+
 // n-dimensional vector
 export type Vector = Float32Array;
 export type Vectors = Array<Float32Array>;
@@ -11,11 +13,16 @@ export interface WasmModule {
   };
 }
 
-export const dotProductWasm = (
+let Module: WasmModule;
+
+export const dotProductWasm = async (
   vectorsA: Vectors,
   vectorsB: Vectors,
-  Module: WasmModule,
-): Float32Array => {
+  module?: WasmModule,
+): Promise<Float32Array> => {
+  if (!Module && !module) {
+    Module = await getWasmModule();
+  }
   const dims = vectorsA[0].length;
   const size = vectorsA.length;
   const results = new Float32Array(size);
@@ -83,11 +90,11 @@ export const dotProductNaiveBaselineJS = (
 };
 
 // 380% to 300% faster than baseline JS
-export const dotProduct = (
+export const dotProduct = async (
   vectorsA: Vectors,
   vectorsB: Vectors,
-  Module?: any,
-): Float32Array => {
+  module?: any,
+): Promise<Float32Array> => {
   if (vectorsA.length !== vectorsB.length) {
     throw new Error("Dimensionality of both vectors must be equal.");
   }
@@ -99,10 +106,10 @@ export const dotProduct = (
   }
   const dims = vectorsA[0].length;
 
-  if (dims % 4 > 0) {
+  if (dims % 4 !== 0) {
     throw new Error("Dimensionality for must be a multiple of 4.");
   }
   return typeof WebAssembly === "object"
-    ? dotProductWasm(vectorsA, vectorsB, Module)
+    ? dotProductWasm(vectorsA, vectorsB, module)
     : dotProductJS(vectorsA, vectorsB);
 };
