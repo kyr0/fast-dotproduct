@@ -4,12 +4,16 @@ import {
   dotProductJS,
   dotProductNaiveBaselineJS,
   dotProductWasm,
+  initWasm,
 } from "./";
 import { generateSampleData } from "./sample/math";
 import { perf } from "@jsheaven/perf";
 
 // @ts-ignore
 import getWasmModule from "./.gen/dot_product.mjs";
+
+// make sure the Module is loaded
+await initWasm(await getWasmModule());
 
 // 2 x 1024 float32 vectors with 1024 dimensions, seeded random
 const sampleData20kx1024dims = generateSampleData(
@@ -37,6 +41,7 @@ const samplesPerDimension = {
 };
 
 test("Make sure the API interface/contract is fulfilled", async () => {
+  expect(typeof initWasm).toEqual("function");
   expect(typeof dotProduct).toEqual("function");
   expect(typeof dotProductJS).toEqual("function");
   expect(typeof dotProductWasm).toEqual("function");
@@ -64,14 +69,14 @@ test("Calculates the dot product of two vectors using JIT optimized JS", async (
 test("Calculates the dot product of two vectors using SIMD optimized WebAssembly module", async () => {
   const vectorA = sampleData20kx4dims.vectorsA[0];
   const vectorB = sampleData20kx4dims.vectorsB[0];
-  const results = await dotProductWasm([vectorA], [vectorB]);
+  const results = dotProductWasm([vectorA], [vectorB]);
   expect(results[0]).toBeCloseTo(-0.01842280849814415);
 });
 
 test("Auto-switches between JIT-optimized JS and SIMD-optimized WASM based on WebAssembly availability", async () => {
   const vectorA = sampleData20kx4dims.vectorsA[0];
   const vectorB = sampleData20kx4dims.vectorsB[0];
-  const results = await dotProduct(
+  const results = dotProduct(
     [vectorA, vectorA, vectorA, vectorA],
     [vectorB, vectorB, vectorB, vectorB],
   );
@@ -164,7 +169,7 @@ test("perf: Measure and report the performance of 100000 single, SIMD-optimized 
           if (!times[dims]) {
             times[dims] = performance.now();
           }
-          await dotProductWasm([vectorA], [vectorB]);
+          dotProductWasm([vectorA], [vectorB]);
 
           if (i === iterations - 1 && times[dims]) {
             times[dims] = performance.now() - times[dims];
@@ -194,7 +199,7 @@ test("perf: Measure and report the performance of 100000 single, naive/baseline 
     [
       {
         name: "JS_multi",
-        fn: async (dims: number, i: number) => {
+        fn: async (dims: number, _i: number) => {
           const vectorsA = samplesPerDimension[dims as 4 | 384 | 1024].vectorsA;
           const vectorsB = samplesPerDimension[dims as 4 | 384 | 1024].vectorsB;
           times[dims] = performance.now();
@@ -225,7 +230,7 @@ test("perf: Measure and report the performance of 100000 single, JIT-optimized J
     [
       {
         name: "JS_JIT_multi",
-        fn: async (dims: number, i: number) => {
+        fn: async (dims: number, _i: number) => {
           const vectorsA = samplesPerDimension[dims as 4 | 384 | 1024].vectorsA;
           const vectorsB = samplesPerDimension[dims as 4 | 384 | 1024].vectorsB;
           times[dims] = performance.now();
@@ -249,7 +254,6 @@ ${dimensions.map((d) => `  - ${times[d].toFixed()} ms for ${d} dimensions`).join
 });
 
 test("perf: Measure and report the performance of 100000 single, SIMD-optimized WASM-based dot product calculations, passed at once", async () => {
-  const Module = await getWasmModule();
   const times: { [index: number]: number } = {};
   const iterations = 1;
   const dimensions = [4, 384, 1024];
@@ -257,11 +261,11 @@ test("perf: Measure and report the performance of 100000 single, SIMD-optimized 
     [
       {
         name: "WASM_multi",
-        fn: async (dims: number, i: number) => {
+        fn: async (dims: number, _i: number) => {
           const vectorsA = samplesPerDimension[dims as 4 | 384 | 1024].vectorsA;
           const vectorsB = samplesPerDimension[dims as 4 | 384 | 1024].vectorsB;
           times[dims] = performance.now();
-          await dotProductWasm(vectorsA, vectorsB, Module);
+          dotProductWasm(vectorsA, vectorsB);
           times[dims] = performance.now() - times[dims];
         },
       },

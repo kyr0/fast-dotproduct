@@ -15,14 +15,21 @@ export interface WasmModule {
 
 let Module: WasmModule;
 
-export const dotProductWasm = async (
-  vectorsA: Vectors,
-  vectorsB: Vectors,
-  module?: WasmModule,
-): Promise<Float32Array> => {
-  if (!Module && !module) {
+export const initWasm = async (module?: WasmModule): Promise<WasmModule> => {
+  if (module) {
+    Module = module;
+  }
+
+  if (!Module) {
     Module = await getWasmModule();
   }
+  return Module;
+};
+
+export const dotProductWasm = (
+  vectorsA: Vectors,
+  vectorsB: Vectors,
+): Float32Array => {
   const dims = vectorsA[0].length;
   const size = vectorsA.length;
   const results = new Float32Array(size);
@@ -90,11 +97,10 @@ export const dotProductNaiveBaselineJS = (
 };
 
 // 380% to 300% faster than baseline JS
-export const dotProduct = async (
+export const dotProduct = (
   vectorsA: Vectors,
   vectorsB: Vectors,
-  module?: any,
-): Promise<Float32Array> => {
+): Float32Array => {
   if (vectorsA.length !== vectorsB.length) {
     throw new Error("Dimensionality of both vectors must be equal.");
   }
@@ -110,6 +116,6 @@ export const dotProduct = async (
     throw new Error("Dimensionality for must be a multiple of 4.");
   }
   return typeof WebAssembly === "object"
-    ? dotProductWasm(vectorsA, vectorsB, module)
+    ? dotProductWasm(vectorsA, vectorsB)
     : dotProductJS(vectorsA, vectorsB);
 };
