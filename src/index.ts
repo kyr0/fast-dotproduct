@@ -101,21 +101,28 @@ export const dotProduct = (
   vectorsA: Vectors,
   vectorsB: Vectors,
 ): Float32Array => {
-  if (vectorsA.length !== vectorsB.length) {
-    throw new Error("Dimensionality of both vectors must be equal.");
+  if (vectorsA.length === 0 || vectorsB.length === 0) {
+    throw new Error("One of the vector arrays are empty.");
   }
-  if (vectorsA.length === 0) {
-    throw new Error("Vectors are empty.");
+  const dimsA0 = vectorsA[0].length;
+  const dimsB0 = vectorsB[0].length;
+
+  if (dimsA0 !== dimsB0) {
+    throw new Error(
+      "Dimensionality of both vectors must be equal (only tested the first one).",
+    );
   }
-  if (vectorsA.length < 4) {
+
+  if (dimsA0 < 4) {
     throw new Error("The minimum dimensionality for optimizations is 4.");
   }
-  const dims = vectorsA[0].length;
 
-  if (dims % 4 !== 0) {
+  if (dimsA0 % 4 !== 0) {
     throw new Error("Dimensionality for must be a multiple of 4.");
   }
-  return typeof WebAssembly === "object"
+
+  // TODO: probably should test for SIMD support too, although it's > 94% evergreen already
+  return typeof WebAssembly === "object" && Module
     ? dotProductWasm(vectorsA, vectorsB)
     : dotProductJS(vectorsA, vectorsB);
 };
