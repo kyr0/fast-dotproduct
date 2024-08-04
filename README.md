@@ -44,8 +44,51 @@ _Do you see any potential for further improvements? Please contribute to this pr
 
 ### 2. Use it
 
+#### 2.1 Tensor API 
+
+The Tensor API variant is the default API, allowing for passing many vectors to be calculated in one bulk operation.
+This ensures JIT optimizations taking place in the JS runtime/VM (V8, JavaScriptCore). 
+
+For every vector passed in the Array of the first argument, the dot product is caclulated with the same index vector
+in the second argument Array (`vectorA[n] ⋅ vectorB[n]`).
+
 ```ts
-import { dotProduct } from "fast-dotproduct"
+import { dotProduct, initWasm } from "fast-dotproduct"
+// make sure the WebAssembly Module is loaded
+await initWasm(); // or: await initWasm(await getWasmModule()); for custom WASM runtime - see ./src/index.spec.ts
+
+const vectorsA = [
+  new Float32Array([
+    0.1785489022731781,
+    0.6047865748405457,
+    -0.29714474081993103,
+    0.8343878388404846
+  ])
+]
+
+const vectorsB = [
+  new Float32Array([
+    -0.12137561291456223,
+    0.4885213375091553,
+    0.3105606138706207,
+    -0.23960202932357788
+  ])
+]
+
+const result = dotProduct(vectorsA, vectorsB)
+// Float32Array(-0.01842280849814415)
+```
+
+#### 2.2 Atomic Vector API
+
+There are cases, when the Tensor API is not what you're looking for and creating/unwrapping Array's would be 
+unnecessary overhead. You can use the atomic vector operation API in those cases.
+
+
+```ts
+import { singeDotProduct, initWasm } from "fast-dotproduct"
+// make sure the WebAssembly Module is loaded
+await initWasm(); // or: await initWasm(await getWasmModule()); for custom WASM runtime - see ./src/index.spec.ts
 
 const vectorA = new Float32Array([
   0.1785489022731781,
@@ -61,18 +104,24 @@ const vectorB = new Float32Array([
   -0.23960202932357788
 ])
 
+const result = singeDotProduct(vectorA, vectorB)
 // -0.01842280849814415
-const result = await dotProduct([vectorA], [vectorB])
-
-// if you have many vectors, pass them as a tensor for improved performance:
-// const vectorsA = [Float32Array(1024), Float32Array(1024), ...]
-// const vectorsB = [Float32Array(1024), Float32Array(1024), ...]
-// const results = dotProduct(vectorsA, vectorsB)
-// results[0] -> -0.01842280849814415
-// results[...] -> etc.
 ```
 
-Examples on how to use the WASM or JS-implementation specifically, please refer to [the tests](./src/index.spec.ts).
+
+#### 2.3 Low-level API access
+
+If you want to spare on safety and call a runtime function directly, you may do so as well:
+
+Tensor API:
+`dotProductJS(vectorsA: Array<Float32Array>, vectorsB: Array<Float32Array>)` 
+`dotProductWASM(vectorsA: Array<Float32Array>, vectorsB: Array<Float32Array>)`
+
+Atomic Vector API:
+`singleDotProductJS(vectorA: Float32Array, vectorB: Float32Array)` 
+`singleDotProductWASM(vectorA: Float32Array, vectorB: Float32Array)`
+
+For examples on how to use the WASM or JS-implementation specifically, please refer to [the tests](./src/index.spec.ts).
 
 ### Why shouldn't I use a simple, naive dot product implementation in JS?
 
